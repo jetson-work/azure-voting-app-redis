@@ -12,9 +12,7 @@ pipeline {
             sh 'docker images -a'
             sh """
                cd azure-vote/
-               docker images -a
                docker build -t voting-app-demo .
-               docker images -a
                cd ..
             """
          }
