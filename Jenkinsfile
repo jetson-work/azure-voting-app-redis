@@ -13,7 +13,7 @@ pipeline {
             pwsh(script: """
                cd azure-vote/
                docker images -a
-               docker build -t jenkins-pipeline .
+               docker build -t voting-app-demo .
                docker images -a
                cd ..
             """)
@@ -37,9 +37,7 @@ pipeline {
       }
       stage('Run Tests') {
          steps {
-            pwsh(script: """
-               pytest ./tests/test_sample.py
-            """)
+            sh"""pytest ./tests/test_sample.py"""
          }
       }
       stage('Stop test app') {
@@ -53,8 +51,8 @@ pipeline {
          parallel {
             stage('Run Anchore') {
                steps {
-                  pwsh(script: """
-                     Write-Output "blackdentech/jenkins-course" > anchore_images
+                  sh(script: """
+                     echo "jetson-work/jenkins-course" > anchore_images
                   """)
                   anchore bailOnFail: false, bailOnPluginFail: false, name: 'anchore_images'
                }
@@ -68,58 +66,6 @@ pipeline {
                }
             }
          }
-      }
-      stage('Deploy to QA') {
-         environment {
-            ENVIRONMENT = 'qa'
-         }
-         steps {
-            echo "Deploying to ${ENVIRONMENT}"
-            acsDeploy(
-               azureCredentialsId: "jenkins_demo",
-               configFilePaths: "**/*.yaml",
-               containerService: "${ENVIRONMENT}-demo-cluster | AKS",
-               resourceGroupName: "${ENVIRONMENT}-demo",
-               sshCredentialsId: ""
-            )
-         }
-      }
-      stage('Approve PROD Deploy') {
-         when {
-            branch 'master'
-         }
-         options {
-            timeout(time: 1, unit: 'HOURS') 
-         }
-         steps {
-            input message: "Deploy?"
-         }
-         post {
-            success {
-               echo "Production Deploy Approved"
-            }
-            aborted {
-               echo "Production Deploy Denied"
-            }
-         }
-      }
-      stage('Deploy to PROD') {
-         when {
-            branch 'master'
-         }
-         environment {
-            ENVIRONMENT = 'prod'
-         }
-         steps {
-            echo "Deploying to ${ENVIRONMENT}"
-            acsDeploy(
-               azureCredentialsId: "jenkins_demo",
-               configFilePaths: "**/*.yaml",
-               containerService: "${ENVIRONMENT}-demo-cluster | AKS",
-               resourceGroupName: "${ENVIRONMENT}-demo",
-               sshCredentialsId: ""
-            )
-         }
-      }
+      }#container scanning end
    }
 }
